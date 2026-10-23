@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'mortgage.dart';
 
 // Screen 2 (right): lets the user change years, amount, and interest rate
 class ModifyScreen extends StatefulWidget {
-  final Mortgage mortgage; // shared data from screen 1
-
-  const ModifyScreen({super.key, required this.mortgage});
+  const ModifyScreen({super.key});
 
   @override
   State<ModifyScreen> createState() => _ModifyScreenState();
@@ -22,10 +21,12 @@ class _ModifyScreenState extends State<ModifyScreen> {
   @override
   void initState() {
     super.initState();
-    years = widget.mortgage.years;
+    // read: get the shared data from Provider (already loaded from SharedPreferences)
+    final mortgage = context.read<Mortgage>();
+    years = mortgage.years;
     amountController =
-        TextEditingController(text: widget.mortgage.amount.toStringAsFixed(2));
-    selectedRateIndex = ((widget.mortgage.rate * 100 - 2) / 0.25).round();
+        TextEditingController(text: mortgage.amount.toStringAsFixed(2));
+    selectedRateIndex = ((mortgage.rate * 100 - 2) / 0.25).round();
   }
 
   @override
@@ -34,12 +35,14 @@ class _ModifyScreenState extends State<ModifyScreen> {
     super.dispose();
   }
 
-  // Done button: save the new values and go back to screen 1
+  // Done button: update the shared data (which also saves it) and go back
   void done() {
-    widget.mortgage.years = years;
-    widget.mortgage.amount =
-        double.tryParse(amountController.text) ?? widget.mortgage.amount;
-    widget.mortgage.rate = rates[selectedRateIndex] / 100;
+    final mortgage = context.read<Mortgage>();
+    mortgage.update(
+      years,
+      double.tryParse(amountController.text) ?? mortgage.amount,
+      rates[selectedRateIndex] / 100,
+    );
     Navigator.pop(context);
   }
 
@@ -81,7 +84,7 @@ class _ModifyScreenState extends State<ModifyScreen> {
                   child: TextField(
                     controller: amountController,
                     keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
+                    const TextInputType.numberWithOptions(decimal: true),
                   ),
                 ),
               ],

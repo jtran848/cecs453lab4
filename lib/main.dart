@@ -1,9 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'mortgage.dart';
 import 'modify_screen.dart';
 
-void main() {
-  runApp(const MortgageApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Load the saved data from SharedPreferences before the app starts
+  final mortgage = Mortgage();
+  await mortgage.load();
+
+  runApp(
+    ChangeNotifierProvider.value(
+      value: mortgage,
+      child: const MortgageApp(),
+    ),
+  );
 }
 
 class MortgageApp extends StatelessWidget {
@@ -27,17 +39,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final Mortgage mortgage = Mortgage();
   bool termsAccepted = false;
-
-  // Modify Data button: go to screen 2, then refresh when it comes back
-  void openModifyScreen() async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => ModifyScreen(mortgage: mortgage)),
-    );
-    setState(() {});
-  }
 
   // Terms and Conditions check box: confirm with an AlertDialog
   void onTermsChanged(bool? value) async {
@@ -79,6 +81,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // watch: this screen rebuilds whenever the Mortgage data changes
+    final mortgage = context.watch<Mortgage>();
+
     return Scaffold(
       appBar: AppBar(title: const Text('MortgageV0')),
       body: Padding(
@@ -102,7 +107,11 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 16),
             Center(
               child: ElevatedButton(
-                onPressed: openModifyScreen,
+                // Modify Data button: go to screen 2
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ModifyScreen()),
+                ),
                 child: const Text('MODIFY DATA'),
               ),
             ),

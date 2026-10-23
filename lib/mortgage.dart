@@ -1,7 +1,10 @@
 import 'dart:math';
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-// Model: encapsulates a mortgage calculator (Dart version of the Mortgage class)
-class Mortgage {
+// Model: the mortgage data shared by both screens through Provider.
+// ChangeNotifier lets the screens rebuild when the data changes.
+class Mortgage extends ChangeNotifier {
   double _amount = 100000.0;
   int _years = 30;
   double _rate = 0.035;
@@ -10,16 +13,26 @@ class Mortgage {
   int get years => _years;
   double get rate => _rate;
 
-  set amount(double newAmount) {
-    if (newAmount >= 0) _amount = newAmount;
+  // Load the last saved inputs (or keep the defaults on first launch)
+  Future<void> load() async {
+    final prefs = await SharedPreferences.getInstance();
+    _amount = prefs.getDouble('amount') ?? _amount;
+    _years = prefs.getInt('years') ?? _years;
+    _rate = prefs.getDouble('rate') ?? _rate;
+    notifyListeners();
   }
 
-  set years(int newYears) {
+  // Called by the Done button: update the data, save it, and notify listeners
+  Future<void> update(int newYears, double newAmount, double newRate) async {
     if (newYears >= 0) _years = newYears;
-  }
-
-  set rate(double newRate) {
+    if (newAmount >= 0) _amount = newAmount;
     if (newRate >= 0) _rate = newRate;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('years', _years);
+    await prefs.setDouble('amount', _amount);
+    await prefs.setDouble('rate', _rate);
   }
 
   double monthlyPayment() {
